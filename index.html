@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Cuaca Mini</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Mengubah ini dari center agar konten tidak terlalu tinggi */
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            transition: background-color 0.5s ease-in-out; /* Transisi untuk perubahan warna latar */
+            padding: 20px; /* Tambahkan padding agar tidak terlalu mepet */
+            box-sizing: border-box;
+            color: #333; /* Warna teks default, penting agar teks terlihat */
+        }
+
+        .day-background {
+            background-color: #e0f7fa; /* Biru langit */
+            color: #333; /* Pastikan teksnya gelap untuk latar belakang siang */
+        }
+
+        .night-background {
+            background-color: #3f51b5; /* Biru gelap */
+            color: white; /* Teks putih untuk latar belakang malam */
+        }
+
+        .weather-app {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        #cityInput {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex-grow: 1;
+            font-size: 1rem;
+        }
+
+        #searchButton {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        #searchButton:hover {
+            background-color: #0056b3;
+        }
+
+        .weather-display {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .weather-display h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .weather-display p {
+            margin: 8px 0;
+            font-size: 1.1rem;
+            color: #555; /* Pastikan paragraf juga memiliki warna yang kontras */
+        }
+
+        #currentTemp {
+            color: black; /* Defaultkan ke hitam, JS akan mengubahnya */
+        }
+
+        .forecast-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .forecast-display {
+            display: flex;
+            justify-content: space-around;
+            gap: 15px;
+            flex-wrap: wrap; /* Agar responsif di layar kecil */
+        }
+
+        .forecast-item {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1; /* Agar item mengisi ruang */
+            min-width: 120px; /* Ukuran minimum agar tidak terlalu kecil */
+            max-width: 150px; /* Ukuran maksimum untuk kerapian */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            color: #444; /* Warna teks untuk item prakiraan */
+        }
+
+        .forecast-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .forecast-item h3 {
+            margin-top: 0;
+            color: #333; /* Pastikan judul item prakiraan gelap */
+            font-size: 1.1rem;
+        }
+
+        /* Class untuk manipulasi CSS */
+        .text-red {
+            color: red;
+            font-weight: bold;
+        }
+
+        .cuaca-hujan {
+            background-color: #cce7ff; /* Biru muda */
+            border-left: 5px solid #007bff;
+            color: #333; /* Pastikan teks di dalamnya gelap */
+        }
+
+        .cuaca-cerah {
+            background-color: #fffacd; /* Kuning muda */
+            border-left: 5px solid #ffc107;
+            color: #333; /* Pastikan teks di dalamnya gelap */
+        }
+
+        .cuaca-berawan {
+            background-color: #e0e0e0; /* Abu-abu muda */
+            border-left: 5px solid #6c757d;
+            color: #333; /* Pastikan teks di dalamnya gelap */
+        }
+
+        /* Responsif dasar */
+        @media (max-width: 600px) {
+            .weather-app {
+                padding: 20px;
+            }
+            .search-bar {
+                flex-direction: column;
+            }
+            .forecast-item {
+                flex-basis: 100%; /* Setiap item mengisi satu baris */
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-app">
+        <h1>Cuaca Hari Ini</h1>
+        <div class="search-bar">
+            <input type="text" id="cityInput" placeholder="Masukkan nama kota...">
+            <button id="searchButton">Cari</button>
+        </div>
+        <div id="weatherDisplay" class="weather-display">
+            <p>Silakan cari kota untuk melihat cuaca.</p>
+        </div>
+        
+        <div class="forecast-section">
+            <h2>Prakiraan Cuaca 3 Hari</h2>
+            <div id="forecastDisplay" class="forecast-display">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const weatherData = {
+            "jakarta": {
+                current: {
+                    temp: "29°C",
+                    description: "Cerah Berawan",
+                    icon: "sun.png", // Kamu bisa gunakan ikon dari Google Material Icons atau ikon sederhana lainnya
+                    humidity: "75%",
+                    wind: "10 km/h"
+                },
+                forecast: [
+                    { day: "Besok", temp: "30°C", description: "Cerah", icon: "sun.png" },
+                    { day: "Lusa", temp: "28°C", description: "Hujan Ringan", icon: "rain.png" },
+                    { day: "3 Hari Lagi", temp: "29°C", description: "Berawan", icon: "cloud.png" }
+                ]
+            },
+            "bandung": {
+                current: {
+                    temp: "25°C",
+                    description: "Sejuk Berawan",
+                    icon: "cloud.png",
+                    humidity: "80%",
+                    wind: "5 km/h"
+                },
+                forecast: [
+                    { day: "Besok", temp: "26°C", description: "Berawan", icon: "cloud.png" },
+                    { day: "Lusa", temp: "24°C", description: "Hujan Sedang", icon: "heavy-rain.png" },
+                    { day: "3 Hari Lagi", temp: "25°C", description: "Cerah", icon: "sun.png" }
+                ]
+            },
+            "surabaya": {
+                current: {
+                    temp: "32°C",
+                    description: "Panas Menyengat",
+                    icon: "hot.png",
+                    humidity: "60%",
+                    wind: "15 km/h"
+                },
+                forecast: [
+                    { day: "Besok", temp: "33°C", description: "Panas", icon: "hot.png" },
+                    { day: "Lusa", temp: "30°C", description: "Cerah Berawan", icon: "sun.png" },
+                    { day: "3 Hari Lagi", temp: "31°C", description: "Berawan", icon: "cloud.png" }
+                ]
+            }
+            // Tambahkan kota lain jika kamu mau
+        };
+
+        const cityInput = document.getElementById('cityInput');
+        const searchButton = document.getElementById('searchButton');
+        const weatherDisplay = document.getElementById('weatherDisplay');
+        const forecastDisplay = document.getElementById('forecastDisplay');
+
+        // Fungsi untuk menampilkan data cuaca
+        function displayWeather(city) {
+            const cityLower = city.toLowerCase();
+            const data = weatherData[cityLower];
+
+            if (data) {
+                // Manipulasi Atribut dan Style
+                weatherDisplay.innerHTML = `
+                    <h2>Cuaca di ${city}</h2>
+                    <img id="weatherIcon" src="icons/${data.current.icon}" alt="${data.current.description}" style="width: 80px; height: 80px;">
+                    <p><strong>Suhu:</strong> <span id="currentTemp">${data.current.temp}</span></p>
+                    <p><strong>Kondisi:</strong> ${data.current.description}</p>
+                    <p><strong>Kelembaban:</strong> ${data.current.humidity}</p>
+                    <p><strong>Angin:</strong> ${data.current.wind}</p>
+                `;
+                // Contoh manipulasi style: Ubah warna latar belakang berdasarkan suhu (dummy logic)
+                const currentTempSpan = document.getElementById('currentTemp');
+                const tempValue = parseInt(data.current.temp);
+                if (tempValue > 30) {
+                    document.body.style.backgroundColor = '#ffcccc'; // Merah muda untuk panas
+                    currentTempSpan.style.color = 'red'; // Teks suhu merah
+                } else if (tempValue < 26) {
+                    document.body.style.backgroundColor = '#ccf2ff'; // Biru muda untuk dingin
+                    currentTempSpan.style.color = 'blue'; // Teks suhu biru
+                } else {
+                    document.body.style.backgroundColor = '#f0f0f0'; // Normal
+                    currentTempSpan.style.color = 'black';
+                }
+
+                // Menghapus elemen prakiraan sebelumnya (jika ada)
+                while (forecastDisplay.firstChild) {
+                    forecastDisplay.removeChild(forecastDisplay.firstChild);
+                }
+
+                // Membuat dan Menambahkan Elemen untuk prakiraan
+                data.forecast.forEach(dayForecast => {
+                    const forecastItem = document.createElement('div');
+                    forecastItem.classList.add('forecast-item'); // Manipulasi Class CSS
+                    forecastItem.innerHTML = `
+                        <h3>${dayForecast.day}</h3>
+                        <img src="icons/${dayForecast.icon}" alt="${dayForecast.description}" style="width: 50px; height: 50px;">
+                        <p>${dayForecast.temp}</p>
+                        <p>${dayForecast.description}</p>
+                    `;
+                    forecastDisplay.appendChild(forecastItem);
+
+                    // Manipulasi Class CSS berdasarkan kondisi cuaca
+                    if (dayForecast.description.includes("Hujan")) {
+                        forecastItem.classList.add('cuaca-hujan');
+                    } else if (dayForecast.description.includes("Cerah")) {
+                        forecastItem.classList.add('cuaca-cerah');
+                    } else {
+                        forecastItem.classList.add('cuaca-berawan');
+                    }
+                });
+
+            } else {
+                weatherDisplay.innerHTML = `<p class="error-message">Data cuaca untuk ${city} tidak ditemukan.</p>`;
+                // Manipulasi Class CSS untuk pesan error
+                weatherDisplay.querySelector('.error-message').classList.add('text-red'); 
+                document.body.style.backgroundColor = '#f0f0f0'; // Kembali ke normal
+                forecastDisplay.innerHTML = ''; // Kosongkan prakiraan
+            }
+        }
+
+        // Event Handling: Mouse Event (klik tombol)
+        searchButton.addEventListener('click', () => {
+            const city = cityInput.value.trim();
+            if (city) {
+                displayWeather(city);
+            } else {
+                alert("Mohon masukkan nama kota!");
+            }
+        });
+
+        // Event Handling: Keyboard Event (tekan Enter di input)
+        cityInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                const city = cityInput.value.trim();
+                if (city) {
+                    displayWeather(city);
+                } else {
+                    alert("Mohon masukkan nama kota!");
+                }
+            }
+        });
+
+        // Fungsi untuk mengganti background berdasarkan waktu (dummy, bisa disempurnakan)
+        function setBackgroundByTime() {
+            const hour = new Date().getHours();
+            if (hour >= 6 && hour < 18) { // Siang
+                document.body.classList.remove('night-background');
+                document.body.classList.add('day-background');
+            } else { // Malam
+                document.body.classList.remove('day-background');
+                document.body.classList.add('night-background');
+            }
+        }
+
+        // Panggil saat halaman dimuat
+        setBackgroundByTime();
+        displayWeather("jakarta"); // Tampilkan cuaca Jakarta sebagai default
+    </script>
+</body>
+</html>
